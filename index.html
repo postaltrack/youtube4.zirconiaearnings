@@ -5,89 +5,113 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Watch and Earn</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f4f4f4;
-        text-align: center;
-        padding: 20px;
-    }
-    h1 {
-        color: #222;
-    }
-    iframe {
-        width: 560px;
-        height: 315px;
-        border: none;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-    .timer, .reward {
-        font-size: 20px;
-        margin-top: 15px;
-        color: #333;
-        font-weight: bold;
-    }
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 24px;
+    color: #222;
+    margin-bottom: 20px;
+  }
+  .video-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* keeps it small on desktop */
+    margin: auto;
+    background: #000;
+  }
+  .video-container::before {
+    content: "";
+    display: block;
+    padding-top: 100%; /* 1:1 square ratio */
+  }
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .info {
+    margin-top: 15px;
+    font-size: 18px;
+  }
+  .reward {
+    font-size: 20px;
+    font-weight: bold;
+    color: green;
+    margin-top: 5px;
+  }
 </style>
 </head>
 <body>
 
 <h1>Watch and Earn</h1>
 
-<!-- YouTube video -->
-<iframe id="videoFrame" src="https://www.youtube.com/embed/jKNYgLFI9us?enablejsapi=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<div class="video-container">
+  <iframe id="youtubeVideo" 
+    src="https://www.youtube.com/embed/jKNYgLFI9us?enablejsapi=1&autoplay=0&controls=1" 
+    allow="autoplay; encrypted-media" 
+    allowfullscreen>
+  </iframe>
+</div>
 
-<div class="timer" id="timer">Time Watched: 0:00</div>
-<div class="reward" id="reward">Reward: ₦0</div>
+<div class="info">
+  Time Watched: <span id="timer">0:00</span><br>
+  Reward: <span id="reward">₦0</span>
+</div>
 
 <script>
-    let secondsWatched = 0;
-    let rewardAmount = 0;
-    let timerInterval;
+  let secondsWatched = 0;
+  let timerInterval;
+  let player;
 
-    // Start counting when the video starts playing
-    function onYouTubeIframeAPIReady() {
-        player = new YT.Player('videoFrame', {
-            events: {
-                'onStateChange': onPlayerStateChange
-            }
-        });
+  function updateDisplay() {
+    let minutes = Math.floor(secondsWatched / 60);
+    let seconds = secondsWatched % 60;
+    document.getElementById("timer").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    let reward = Math.floor(minutes / 3) * 100; 
+    document.getElementById("reward").textContent = `₦${reward}`;
+  }
+
+  function startTimer() {
+    if (!timerInterval) {
+      timerInterval = setInterval(() => {
+        secondsWatched++;
+        updateDisplay();
+      }, 1000);
     }
+  }
 
-    function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.PLAYING) {
-            if (!timerInterval) {
-                timerInterval = setInterval(() => {
-                    secondsWatched++;
-                    updateTimer();
-                    updateReward();
-                }, 1000);
-            }
-        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-            clearInterval(timerInterval);
-            timerInterval = null;
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // YouTube API
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('youtubeVideo', {
+      events: {
+        'onStateChange': function(event) {
+          if (event.data === YT.PlayerState.PLAYING) {
+            startTimer();
+          } else {
+            stopTimer();
+          }
         }
-    }
+      }
+    });
+  }
 
-    function updateTimer() {
-        let minutes = Math.floor(secondsWatched / 60);
-        let seconds = secondsWatched % 60;
-        document.getElementById('timer').innerText = `Time Watched: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    function updateReward() {
-        if (secondsWatched >= 180 && rewardAmount < 100) {
-            rewardAmount = 100;
-        }
-        if (secondsWatched >= 360 && rewardAmount < 200) {
-            rewardAmount = 200;
-        }
-        document.getElementById('reward').innerText = `Reward: ₦${rewardAmount}`;
-    }
-
-    // Load YouTube API
-    let tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.body.appendChild(tag);
+  // Load YouTube API
+  let tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
 </script>
 
 </body>
